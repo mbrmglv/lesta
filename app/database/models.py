@@ -30,10 +30,12 @@ class WordResult(Base):
     analysis_id = Column(String(36), ForeignKey("text_analyses.id", ondelete="CASCADE"), nullable=False)
     word = Column(String(255), nullable=False)
     tf = Column(Integer, nullable=False)
+    df = Column(Integer, nullable=False, default=1)  # Количество документов, содержащих слово
     idf = Column(Float, nullable=False)
+    document_sources = Column(Text, nullable=True)  # Документы-источники со счетчиками
     
     # Many-to-one relationship with TextAnalysis
     analysis = relationship("TextAnalysis", back_populates="words")
     
     def __repr__(self):
-        return f"<WordResult(word='{self.word}', tf={self.tf}, idf={self.idf})>" 
+        return f"<WordResult(word='{self.word}', tf={self.tf}, df={self.df}, idf={self.idf})>" 

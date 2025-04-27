@@ -27,7 +27,7 @@ class UploadResponse(BaseModel):
         }
 
 class WordInfo(BaseModel):
-    """Model for word information with TF and IDF metrics."""
+    """Model for word information with TF-IDF metrics and document sources."""
     word: str = Field(
         ..., 
         description="The analyzed word",
@@ -35,8 +35,14 @@ class WordInfo(BaseModel):
     )
     tf: int = Field(
         ..., 
-        description="Term Frequency - number of times the word appears in the document",
+        description="Term Frequency - number of times the word appears across all documents",
         example=5,
+        ge=0
+    )
+    df: int = Field(
+        ...,
+        description="Document Frequency - number of documents containing this word",
+        example=2,
         ge=0
     )
     idf: float = Field(
@@ -45,10 +51,15 @@ class WordInfo(BaseModel):
         example=1.204,
         ge=0.0
     )
+    document_sources: str = Field(
+        ...,
+        description="String representation of documents containing this word with counts",
+        example="doc1.txt(3), doc2.txt(2)"
+    )
     
     class Config:
         schema_extra = {
-            "description": "Information about a word's TF-IDF metrics"
+            "description": "Information about a word's TF-IDF metrics and document sources"
         }
 
 class ResultsResponse(BaseModel):

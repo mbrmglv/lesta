@@ -1,6 +1,7 @@
 import re
 import nltk
-from typing import List
+import os
+from typing import List, Dict
 from nltk.corpus import stopwords
 
 from app.logger import get_logger
@@ -36,57 +37,42 @@ def tokenize(text: str) -> List[str]:
     tokens = [token for token in tokens if token and token not in STOP_WORDS]
     return tokens
 
-def split_into_documents(text: str, min_length: int = 100) -> List[str]:
+def load_documents_from_directory(directory_path: str) -> Dict[str, str]:
     """
-    Split text into documents by paragraphs or chunks.
+    Load multiple documents from a directory.
     
     Args:
-        text: The text to split
-        min_length: Minimum document length
+        directory_path: Path to the directory containing text files
         
     Returns:
-        List of document strings
+        Dictionary mapping filenames to their text content
     """
-    logger.debug("Splitting text into documents", text_length=len(text))
+    logger.info(f"Loading documents from directory: {directory_path}")
+    documents = {}
     
-    # First attempt to split by double newlines (paragraphs)
-    paragraphs = re.split(r'\n\s*\n', text)
-    paragraphs = [p.strip() for p in paragraphs if p.strip()]
+    try:
+        for filename in os.listdir(directory_path):
+            file_path = os.path.join(directory_path, filename)
+            
+            # Only process text files
+            if os.path.isfile(file_path) and filename.endswith(('.txt', '.md')):
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                        documents[filename] = content
+                        logger.debug(f"Loaded document: {filename}", length=len(content))
+                except UnicodeDecodeError:
+                    # Try a different encoding if utf-8 fails
+                    try:
+                        with open(file_path, 'r', encoding='cp1251') as f:
+                            content = f.read()
+                            documents[filename] = content
+                            logger.debug(f"Loaded document with cp1251 encoding: {filename}", length=len(content))
+                    except Exception as e:
+                        logger.error(f"Failed to read file {filename}: {str(e)}")
     
-    # If we have a reasonable number of paragraphs, use them as documents
-    if len(paragraphs) >= 3:
-        logger.info("Text split into paragraphs", count=len(paragraphs))
-        return paragraphs
-    
-    # Otherwise split into chunks of approximately 500 chars
-    logger.info("Not enough paragraphs, splitting into chunks")
-    
-    chunks = []
-    current_chunk = ""
-    
-    for paragraph in paragraphs:
-        if len(current_chunk) + len(paragraph) < 500:
-            current_chunk += " " + paragraph if current_chunk else paragraph
-        else:
-            if current_chunk and len(current_chunk) >= min_length:
-                chunks.append(current_chunk)
-            current_chunk = paragraph
-    
-    # Add the last chunk if it's not empty and meets minimum length
-    if current_chunk and len(current_chunk) >= min_length:
-        chunks.append(current_chunk)
-    
-    # If we still don't have enough chunks, split the text into equal parts
-    if len(chunks) < 3:
-        logger.info("Not enough chunks, splitting into equal parts")
-        total_length = len(text)
-        chunk_size = max(min_length, total_length // 5)  # Aim for at least 5 chunks
-        
-        chunks = []
-        for i in range(0, total_length, chunk_size):
-            chunk = text[i:i + chunk_size]
-            if len(chunk) >= min_length:
-                chunks.append(chunk)
-    
-    logger.info("Text split into chunks", count=len(chunks))
-    return chunks 
+        logger.info(f"Loaded {len(documents)} documents from {directory_path}")
+        return documents
+    except Exception as e:
+        logger.error(f"Error loading documents from directory: {str(e)}")
+        return {} 

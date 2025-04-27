@@ -60,7 +60,7 @@ def custom_openapi():
         
         ## API Endpoints
         
-        * `/upload` - Upload text files for processing
+        * `/upload-multiple` - Upload multiple text files for processing
         * `/results/{task_id}` - Get analysis results
         * `/view/{task_id}` - View formatted results page
         """,

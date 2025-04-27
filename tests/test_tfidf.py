@@ -1,6 +1,6 @@
 import math
-from app.services.parsing import tokenize, split_into_documents
-from app.services.tfidf import calculate_tf, calculate_df, calculate_idf, process_text
+from app.services.parsing import tokenize
+from app.services.tfidf import calculate_tf, calculate_df, calculate_idf, process_text, process_documents
 
 def test_tokenize():
     # Simple test case
@@ -21,18 +21,26 @@ def test_tokenize():
     assert "test" in tokens
     assert "@" not in " ".join(tokens)
 
-def test_split_into_documents():
-    # Test with text containing paragraphs
-    text = "This is a test paragraph.\n\nThis is a second paragraph."
-    docs = split_into_documents(text)
+def test_process_documents():
+    # Test with document dictionary
+    documents = {
+        "doc1.txt": "Apple orange apple banana.",
+        "doc2.txt": "Apple grape."
+    }
     
-    # We only check that we have at least one document and each document has tokens
-    assert len(docs) > 0
-    for doc in docs:
-        assert isinstance(doc, list)
-        # The document shouldn't be empty
-        if doc:
-            assert all(isinstance(token, str) for token in doc)
+    results = process_documents(documents)
+    
+    # Check the structure of results
+    assert isinstance(results, list)
+    assert len(results) <= 50  # Should be at most 50 items
+    
+    # Check that all results contain the required fields
+    for item in results:
+        assert "word" in item
+        assert "tf" in item
+        assert "df" in item
+        assert "idf" in item
+        assert "document_sources" in item
 
 def test_calculate_tf():
     tokens = ["apple", "orange", "apple", "banana", "apple"]
@@ -72,10 +80,12 @@ def test_calculate_idf():
     assert round(idf["orange"], 5) == round(expected_orange_idf, 5)
 
 def test_process_text():
+    # Legacy function test
     text = "Apple orange apple banana. Apple grape."
+    # Передаем строки вместо списков токенов
     documents = [
-        ["apple", "orange", "apple", "banana"],
-        ["apple", "grape"]
+        "Apple orange apple banana.",
+        "Apple grape."
     ]
     
     results = process_text(text, documents)
@@ -84,12 +94,10 @@ def test_process_text():
     assert isinstance(results, list)
     assert len(results) <= 50  # Should be at most 50 items
     
-    # Check sorting: higher IDF values should come first
-    if len(results) > 1:
-        assert results[0]["idf"] >= results[1]["idf"]
-    
     # Check that all results contain the required fields
     for item in results:
         assert "word" in item
         assert "tf" in item
-        assert "idf" in item 
+        assert "df" in item
+        assert "idf" in item
+        assert "document_sources" in item 

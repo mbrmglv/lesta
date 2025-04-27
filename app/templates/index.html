@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}TF-IDF Analyzer - Upload File{% endblock %}
+{% block title %}TF-IDF Analyzer - Upload Files{% endblock %}
 
 {% block content %}
 <div class="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-md">
@@ -8,12 +8,12 @@
     
     <div class="mb-8">
         <p class="text-gray-600 mb-4">
-            Upload a text file to analyze it using the TF-IDF algorithm. The application will extract and display the 50 most significant words based on their TF-IDF scores.
+            Upload text files to analyze them using the TF-IDF algorithm. The application will extract and display the 50 most significant words based on their TF-IDF scores.
         </p>
         <p class="text-gray-600 mb-4">
-            <strong>TF (Term Frequency)</strong>: How many times a word appears in the text.
+            <strong>TF (Term Frequency)</strong>: How many times a word appears across all documents.
             <br>
-            <strong>IDF (Inverse Document Frequency)</strong>: A measure of how unique the word is.
+            <strong>IDF (Inverse Document Frequency)</strong>: A measure of how unique the word is across different documents.
         </p>
     </div>
     
@@ -30,7 +30,7 @@
                     $el.classList.remove('border-blue-400', 'bg-blue-50');
                     if ($event.dataTransfer.files.length) {
                         document.getElementById('file-input').files = $event.dataTransfer.files;
-                        fileName = $event.dataTransfer.files[0].name;
+                        updateFileNames();
                     }
                  "
             >
@@ -39,20 +39,25 @@
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                         </svg>
-                        <p class="mb-1">Drag and drop your text file here or click to select</p>
-                        <p class="text-sm text-gray-400">Only .txt files up to 5MB are supported</p>
+                        <p class="mb-1">Drag and drop your text files here or click to select</p>
+                        <p class="text-sm text-gray-400">Only .txt files up to 5MB each are supported (max 20MB total)</p>
                     </div>
-                    <div x-show="fileName" x-cloak class="mt-2 text-sm text-blue-600">
-                        Selected file: <span x-text="fileName" class="font-semibold"></span>
+                    <div x-show="fileNames.length > 0" x-cloak class="mt-2 text-sm text-blue-600">
+                        <div>Selected files: <span x-text="fileNames.length" class="font-semibold"></span></div>
+                        <template x-for="name in fileNames.slice(0, 3)" :key="name">
+                            <div x-text="name" class="text-xs"></div>
+                        </template>
+                        <div x-show="fileNames.length > 3" x-text="`...and ${fileNames.length - 3} more`" class="text-xs"></div>
                     </div>
                 </label>
                 <input 
                     type="file" 
                     id="file-input" 
-                    name="file" 
+                    name="files" 
                     accept=".txt,.text" 
+                    multiple
                     class="hidden"
-                    x-on:change="fileName = $event.target.files[0].name"
+                    x-on:change="updateFileNames"
                 >
             </div>
             
@@ -61,9 +66,9 @@
             <button 
                 type="submit" 
                 class="w-full py-2 px-4 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 disabled:opacity-50"
-                x-bind:disabled="isUploading || !fileName"
+                x-bind:disabled="isUploading || fileNames.length === 0"
             >
-                <span x-show="!isUploading">Analyze Text</span>
+                <span x-show="!isUploading">Analyze Files</span>
                 <span x-show="isUploading" x-cloak>
                     <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -78,7 +83,7 @@
         <div x-show="uploadComplete" x-cloak class="mt-4">
             <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4" role="alert">
                 <p class="font-bold">Success!</p>
-                <p>Your file has been uploaded and is being processed.</p>
+                <p>Your files have been uploaded and are being processed.</p>
             </div>
             <a 
                 x-bind:href="'/view/' + taskId" 
@@ -95,11 +100,16 @@
 <script>
     document.addEventListener('alpine:init', () => {
         Alpine.data('uploadForm', () => ({
-            fileName: '',
+            fileNames: [],
             isUploading: false,
             uploadComplete: false,
             taskId: '',
             errorMessage: '',
+            
+            updateFileNames() {
+                const fileInput = document.getElementById('file-input');
+                this.fileNames = Array.from(fileInput.files).map(file => file.name);
+            },
             
             async upload() {
                 const form = document.getElementById('upload-form');
@@ -109,7 +119,7 @@
                 this.errorMessage = '';
                 
                 try {
-                    const response = await fetch('/upload', {
+                    const response = await fetch('/upload-multiple', {
                         method: 'POST',
                         body: formData
                     });

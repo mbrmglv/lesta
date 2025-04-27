@@ -52,7 +52,9 @@ async def add_word_results(db: AsyncSession, analysis_id: str, word_results: Lis
                 analysis_id=analysis_id,
                 word=result["word"],
                 tf=result["tf"],
-                idf=result["idf"]
+                df=result.get("df", 1),
+                idf=result["idf"],
+                document_sources=result.get("document_sources", "")
             )
             db.add(db_word_result)
         
