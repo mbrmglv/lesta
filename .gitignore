@@ -31,6 +31,8 @@ htmlcov/
 .nox/
 .hypothesis/
 .coverage.*
+.mypy_cache/
+.ruff_cache/
 
 # IDE specific files
 .idea/
