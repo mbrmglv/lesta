@@ -4,18 +4,30 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 
 from app.api import router
+from app.logger import get_logger
+
+# Create logger for this module
+logger = get_logger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """FastAPI application lifecycle function."""
     # Startup code: This runs before the application starts accepting requests
+    logger.info("Application starting up")
+    
     # Initialize database (can be moved to Alembic migrations in production)
     from app.database.db import create_tables
-    create_tables()
+    try:
+        create_tables()
+        logger.info("Database tables created successfully")
+    except Exception as e:
+        logger.error("Failed to create database tables", exc_info=e)
+        raise
     
     yield
     
     # Shutdown code: This runs when the application is shutting down
+    logger.info("Application shutting down")
     # Cleanup resources here if needed
 
 # Create FastAPI app
@@ -82,4 +94,5 @@ app.include_router(router)
 
 if __name__ == "__main__":
     import uvicorn
+    logger.info("Starting application server")
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True) 

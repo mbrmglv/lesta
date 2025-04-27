@@ -1,6 +1,14 @@
 import math
+import re
 from collections import Counter
-from typing import Dict, List, Any
+from typing import List, Dict, Any
+import time
+
+from app.services.parsing import normalize_text
+from app.logger import get_logger
+
+# Create logger for this module
+logger = get_logger(__name__)
 
 def calculate_tf(tokens: List[str]) -> Dict[str, int]:
     """
@@ -32,27 +40,78 @@ def calculate_idf(documents: List[List[str]], df: Dict[str, int]) -> Dict[str, f
         for term, df_count in df.items()
     }
 
-def process_text(text: str, documents: List[List[str]]) -> List[Dict[str, Any]]:
+def process_text(text: str, documents: List[str]) -> List[Dict[str, Any]]:
     """
-    Process text to calculate TF-IDF metrics.
-    Returns a list of dictionaries with word, tf, and idf for each term.
+    Process text to calculate TF-IDF scores for each word.
+    
+    Args:
+        text: The entire text content
+        documents: List of document segments
+        
+    Returns:
+        List of dictionaries with word, tf (term frequency) and idf (inverse document frequency).
+        Returns at most 50 words with highest IDF scores.
     """
-    # Flatten all documents to calculate overall TF
-    all_tokens = [token for doc in documents for token in doc]
+    start_time = time.time()
+    logger.info("Starting TF-IDF processing", text_length=len(text), doc_count=len(documents))
     
-    # Calculate metrics
-    tf = calculate_tf(all_tokens)
-    df = calculate_df(documents)
-    idf = calculate_idf(documents, df)
+    # Normalize and tokenize the full text
+    normalized_text = normalize_text(text)
     
-    # Create a list of dictionaries with word, tf, and idf
-    results = [
-        {"word": term, "tf": tf.get(term, 0), "idf": idf.get(term, 0)}
-        for term in tf.keys()
-    ]
+    # Count term frequencies in the entire text
+    words = re.findall(r'\b\w+\b', normalized_text)
+    word_counts = Counter(words)
     
-    # Sort by decreasing idf, then by decreasing tf for ties
-    results.sort(key=lambda x: (-x["idf"], -x["tf"]))
+    # Filter out words less than 3 characters
+    word_counts = {word: count for word, count in word_counts.items() if len(word) >= 3}
     
-    # Return top 50 words (or all if less than 50)
-    return results[:50] 
+    logger.debug("Word counts calculated", unique_words=len(word_counts))
+    
+    # Calculate document frequencies
+    doc_freq = {}
+    total_docs = len(documents)
+    
+    for doc in documents:
+        # Normalize and tokenize document
+        normalized_doc = normalize_text(doc)
+        
+        # Get unique words in this document
+        doc_words = set(re.findall(r'\b\w+\b', normalized_doc))
+        
+        # Increment document frequency for each word
+        for word in doc_words:
+            if len(word) >= 3:  # Filter out short words
+                doc_freq[word] = doc_freq.get(word, 0) + 1
+    
+    logger.debug("Document frequencies calculated", unique_words=len(doc_freq))
+    
+    # Calculate TF-IDF scores
+    results = []
+    for word, count in word_counts.items():
+        if word in doc_freq:
+            # TF = Term Frequency
+            tf = count
+            
+            # IDF = log((N+1)/(df+1)) + 1 (smoothed IDF)
+            idf = math.log((total_docs + 1) / (doc_freq[word] + 1)) + 1
+            
+            results.append({
+                "word": word,
+                "tf": tf,
+                "idf": idf
+            })
+    
+    # Sort by IDF (highest first)
+    results.sort(key=lambda x: x["idf"], reverse=True)
+    
+    # Limit to top 50 results
+    results = results[:50]
+    
+    processing_time = time.time() - start_time
+    logger.info(
+        "TF-IDF processing completed",
+        processing_time=processing_time,
+        results_count=len(results)
+    )
+    
+    return results 

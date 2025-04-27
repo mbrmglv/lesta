@@ -50,4 +50,8 @@ Desktop.ini
 # Local development
 .env
 .env.local
-.python-version 
+.python-version
+
+# Logs
+logs/
+*.log
