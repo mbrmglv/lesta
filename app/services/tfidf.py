@@ -50,7 +50,7 @@ def process_documents(documents: Dict[str, str]) -> List[Dict[str, Any]]:
     Returns:
         List of dictionaries with word, tf (term frequency), idf (inverse document frequency),
         and document_sources (mapping of documents to term frequency in each document).
-        Returns at most 50 words with highest IDF scores.
+        Returns at most words with highest IDF scores.
     """
     start_time = time.time()
     logger.info("Starting TF-IDF processing for multiple documents", doc_count=len(documents))
@@ -122,9 +122,6 @@ def process_documents(documents: Dict[str, str]) -> List[Dict[str, Any]]:
     
     # Sort by IDF (highest first)
     results.sort(key=lambda x: x["idf"], reverse=True)
-    
-    # Limit to top 50 results
-    results = results[:50]
     
     processing_time = time.time() - start_time
     logger.info(

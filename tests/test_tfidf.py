@@ -32,7 +32,6 @@ def test_process_documents():
     
     # Check the structure of results
     assert isinstance(results, list)
-    assert len(results) <= 50  # Should be at most 50 items
     
     # Check that all results contain the required fields
     for item in results:
@@ -92,12 +91,11 @@ def test_process_text():
     
     # Check the structure of results
     assert isinstance(results, list)
-    assert len(results) <= 50  # Should be at most 50 items
     
     # Check that all results contain the required fields
     for item in results:
         assert "word" in item
         assert "tf" in item
         assert "df" in item
-        assert "idf" in item
+        assert "idf" in item 
         assert "document_sources" in item 

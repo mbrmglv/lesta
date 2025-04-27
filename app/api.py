@@ -102,7 +102,7 @@ async def process_file_task(file_path: str, task_id: str, db: AsyncSession):
         
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(text)
-        
+            
         # Use the multi-file processing approach
         await process_files_task(temp_dir, task_id, db)
     finally:
@@ -112,7 +112,7 @@ async def process_file_task(file_path: str, task_id: str, db: AsyncSession):
             logger.debug("Temporary file deleted", **logger_context)
         except OSError as e:
             logger.warning("Failed to delete temporary file", error=str(e), **logger_context)
-            
+
 # Add new endpoint for multiple file upload
 @router.post(
     "/upload-multiple", 
@@ -197,7 +197,7 @@ async def upload_multiple_files(
                 
             logger.debug("File saved", 
                         filename=safe_filename, 
-                        file_size=len(content),
+                          file_size=len(content), 
                         task_id=task_id)
         
         # Process files in the background
@@ -330,29 +330,81 @@ async def get_results(
         pages=total_pages
     )
 
-@router.get(
-    "/view/{task_id}", 
-    response_class=HTMLResponse,
-    summary="View Results Page",
-    description="Render HTML page with results table for a specific analysis task.",
-    responses={
-        200: {"description": "HTML page with results"},
-        202: {"description": "Analysis is still processing"},
-        404: {"description": "Analysis not found"},
-        500: {"description": "Analysis failed"}
-    }
-)
+@router.get("/view/{task_id}")
 async def view_results(
-    request: Request, 
-    task_id: str, 
-    page: int = Query(1, ge=1, description="Page number for pagination"),
+    request: Request,
+    task_id: str,
+    page: int = Query(1, ge=1),
     db: AsyncSession = Depends(get_async_db)
 ):
     """
-    Render HTML page with results table.
-    
-    - **task_id**: UUID of the analysis task
-    - **page**: Page number (starting from 1)
+    Render a page with the TF-IDF analysis results for a specific task.
     """
-    logger.debug("View results page requested", task_id=task_id, page=page)
-    return await get_results(task_id, page, request, db) 
+    # Check if task exists and get its data
+    task = await crud.get_text_analysis(db, task_id)
+    if not task:
+        return templates.TemplateResponse(
+            "error.html",
+            {"request": request, "message": "Task not found"}
+        )
+    
+    if task.status != "completed":
+        return templates.TemplateResponse(
+            "processing.html",
+            {"request": request, "task_id": task_id, "status": task.status}
+        )
+    
+    # Get results with pagination
+    try:
+        page_size = 10
+        offset = (page - 1) * page_size
+        
+        # Count total items for pagination
+        total_items = await crud.count_word_results(db, task_id)
+        
+        # If no results found
+        if total_items == 0:
+            return templates.TemplateResponse(
+                "error.html",
+                {"request": request, "message": "No results found for this task"}
+            )
+        
+        # Calculate total pages
+        total_pages = (total_items + page_size - 1) // page_size
+        
+        # Check if page number is valid
+        if page > total_pages:
+            return templates.TemplateResponse(
+                "error.html",
+                {"request": request, "message": f"Invalid page number. The task has only {total_pages} page(s)."}
+            )
+        
+        # Get paginated results for this page
+        results = await crud.get_word_results(db, task_id, offset, page_size)
+        
+        # Prepare results for template
+        items = [WordInfo(
+            word=result.word, 
+            tf=result.tf, 
+            df=result.df, 
+            idf=result.idf,
+            document_sources=result.document_sources or ""
+        ) for result in results]
+        
+        return templates.TemplateResponse(
+            "results.html",
+            {
+                "request": request,
+                "task_id": task_id,
+                "items": items,
+                "page": page,
+                "total_pages": total_pages,
+                "total_items": total_items
+            }
+        )
+    except Exception as e:
+        logger.error(f"Error displaying results: {str(e)}")
+        return templates.TemplateResponse(
+            "error.html",
+            {"request": request, "message": f"Error displaying results: {str(e)}"}
+        ) 
