@@ -1,9 +1,7 @@
 import os
-import uuid
 import tempfile
-from typing import Dict, Any, List, Optional
 from fastapi import APIRouter, UploadFile, File, HTTPException, Query, BackgroundTasks, Depends
-from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.requests import Request
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -55,8 +53,8 @@ async def process_file_task(file_path: str, task_id: str, db: AsyncSession):
         # Удаляем временный файл
         try:
             os.unlink(file_path)
-        except:
-            pass
+        except OSError as e:
+            print(f"Warning: Failed to delete temporary file {file_path}: {e}")
 
 @router.post("/upload", response_model=UploadResponse)
 async def upload_file(

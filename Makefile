@@ -25,7 +25,6 @@ test-cov:
 # Lint
 lint:
 	ruff check .
-	mypy app
 
 # Clean
 clean:

@@ -126,4 +126,4 @@ make migrate-rollback
 
 ## Лицензия
 
-MIT License 
+[MIT License](LICENSE) 

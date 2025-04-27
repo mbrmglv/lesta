@@ -1,4 +1,3 @@
-import pytest
 import math
 from app.services.parsing import tokenize, split_into_documents
 from app.services.tfidf import calculate_tf, calculate_df, calculate_idf, process_text

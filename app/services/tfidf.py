@@ -1,6 +1,6 @@
 import math
 from collections import Counter
-from typing import Dict, List, Tuple, Any
+from typing import Dict, List, Any
 
 def calculate_tf(tokens: List[str]) -> Dict[str, int]:
     """

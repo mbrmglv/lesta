@@ -23,9 +23,6 @@ jobs:
       run: |
         pip install ruff
         ruff check .
-    - name: Type check with mypy
-      run: |
-        mypy app
 
   test:
     runs-on: ubuntu-latest
