@@ -6,7 +6,7 @@ from typing import List, Dict, Any, Optional
 from app.database.models import TextAnalysis, WordResult
 
 async def create_text_analysis(db: AsyncSession, filename: Optional[str] = None) -> TextAnalysis:
-    """Создает новую запись анализа текста в базе данных."""
+    """Creates a new text analysis record in the database."""
     db_analysis = TextAnalysis(filename=filename)
     db.add(db_analysis)
     await db.commit()
@@ -14,14 +14,14 @@ async def create_text_analysis(db: AsyncSession, filename: Optional[str] = None)
     return db_analysis
 
 async def get_text_analysis(db: AsyncSession, analysis_id: str) -> Optional[TextAnalysis]:
-    """Получает запись анализа текста по id."""
+    """Gets a text analysis record by id."""
     result = await db.execute(
         select(TextAnalysis).where(TextAnalysis.id == analysis_id)
     )
     return result.scalars().first()
 
 async def update_text_analysis(db: AsyncSession, analysis_id: str, status: str, error_message: Optional[str] = None) -> bool:
-    """Обновляет статус анализа текста."""
+    """Updates the status of a text analysis."""
     stmt = update(TextAnalysis).where(TextAnalysis.id == analysis_id).values(
         status=status,
         error_message=error_message
@@ -31,7 +31,7 @@ async def update_text_analysis(db: AsyncSession, analysis_id: str, status: str, 
     return True
 
 async def add_word_results(db: AsyncSession, analysis_id: str, word_results: List[Dict[str, Any]]) -> bool:
-    """Добавляет результаты анализа слов для заданного анализа текста."""
+    """Adds word analysis results for a given text analysis."""
     for result in word_results:
         db_word_result = WordResult(
             analysis_id=analysis_id,
@@ -45,7 +45,7 @@ async def add_word_results(db: AsyncSession, analysis_id: str, word_results: Lis
     return True
 
 async def get_word_results(db: AsyncSession, analysis_id: str, skip: int = 0, limit: int = 10) -> List[WordResult]:
-    """Получает результаты анализа слов для заданного анализа текста с пагинацией."""
+    """Gets word analysis results for a given text analysis with pagination."""
     result = await db.execute(
         select(WordResult)
         .where(WordResult.analysis_id == analysis_id)
@@ -56,7 +56,7 @@ async def get_word_results(db: AsyncSession, analysis_id: str, skip: int = 0, li
     return result.scalars().all()
 
 async def count_word_results(db: AsyncSession, analysis_id: str) -> int:
-    """Подсчитывает общее количество слов для заданного анализа текста."""
+    """Counts the total number of words for a given text analysis."""
     result = await db.execute(
         select(func.count())
         .where(WordResult.analysis_id == analysis_id)

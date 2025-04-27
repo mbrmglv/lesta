@@ -7,7 +7,7 @@ from app.api import router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Функция жизненного цикла приложения FastAPI."""
+    """FastAPI application lifecycle function."""
     # Startup code: This runs before the application starts accepting requests
     # Initialize database (can be moved to Alembic migrations in production)
     from app.database.db import create_tables

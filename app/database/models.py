@@ -7,7 +7,7 @@ import uuid
 Base = declarative_base()
 
 class TextAnalysis(Base):
-    """Модель для хранения информации о загруженном файле и результатах анализа."""
+    """Model for storing information about the uploaded file and analysis results."""
     __tablename__ = "text_analyses"
     
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -16,14 +16,14 @@ class TextAnalysis(Base):
     status = Column(String(20), default="processing")  # processing, completed, failed
     error_message = Column(Text, nullable=True)
     
-    # Связь один-ко-многим с WordResult
+    # One-to-many relationship with WordResult
     words = relationship("WordResult", back_populates="analysis", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<TextAnalysis(id='{self.id}', filename='{self.filename}', status='{self.status}')>"
 
 class WordResult(Base):
-    """Модель для хранения результатов TF-IDF анализа для каждого слова."""
+    """Model for storing TF-IDF analysis results for each word."""
     __tablename__ = "word_results"
     
     id = Column(Integer, primary_key=True)
@@ -32,7 +32,7 @@ class WordResult(Base):
     tf = Column(Integer, nullable=False)
     idf = Column(Float, nullable=False)
     
-    # Связь многие-к-одному с TextAnalysis
+    # Many-to-one relationship with TextAnalysis
     analysis = relationship("TextAnalysis", back_populates="words")
     
     def __repr__(self):
