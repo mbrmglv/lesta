@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}TF-IDF Analyzer - Upload File{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-md">
+    <h1 class="text-3xl font-bold mb-6 text-center text-blue-700">Text Analysis with TF-IDF</h1>
+    
+    <div class="mb-8">
+        <p class="text-gray-600 mb-4">
+            Upload a text file to analyze it using the TF-IDF algorithm. The application will extract and display the 50 most significant words based on their TF-IDF scores.
+        </p>
+        <p class="text-gray-600 mb-4">
+            <strong>TF (Term Frequency)</strong>: How many times a word appears in the text.
+            <br>
+            <strong>IDF (Inverse Document Frequency)</strong>: A measure of how unique the word is.
+        </p>
+    </div>
+    
+    <div x-data="uploadForm">
+        <form 
+            x-on:submit.prevent="upload"
+            class="space-y-4"
+            id="upload-form"
+        >
+            <div class="border-dashed border-2 border-gray-300 p-6 rounded-lg text-center" 
+                 x-on:dragover.prevent="$el.classList.add('border-blue-400', 'bg-blue-50')"
+                 x-on:dragleave.prevent="$el.classList.remove('border-blue-400', 'bg-blue-50')"
+                 x-on:drop.prevent="
+                    $el.classList.remove('border-blue-400', 'bg-blue-50');
+                    if ($event.dataTransfer.files.length) {
+                        document.getElementById('file-input').files = $event.dataTransfer.files;
+                        fileName = $event.dataTransfer.files[0].name;
+                    }
+                 "
+            >
+                <label for="file-input" class="cursor-pointer">
+                    <div class="text-gray-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <p class="mb-1">Drag and drop your text file here or click to select</p>
+                        <p class="text-sm text-gray-400">Only .txt files up to 5MB are supported</p>
+                    </div>
+                    <div x-show="fileName" x-cloak class="mt-2 text-sm text-blue-600">
+                        Selected file: <span x-text="fileName" class="font-semibold"></span>
+                    </div>
+                </label>
+                <input 
+                    type="file" 
+                    id="file-input" 
+                    name="file" 
+                    accept=".txt,.text" 
+                    class="hidden"
+                    x-on:change="fileName = $event.target.files[0].name"
+                >
+            </div>
+            
+            <div x-show="errorMessage" x-cloak class="text-red-500 text-sm" x-text="errorMessage"></div>
+            
+            <button 
+                type="submit" 
+                class="w-full py-2 px-4 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 disabled:opacity-50"
+                x-bind:disabled="isUploading || !fileName"
+            >
+                <span x-show="!isUploading">Analyze Text</span>
+                <span x-show="isUploading" x-cloak>
+                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Processing...
+                </span>
+            </button>
+        </form>
+        
+        <!-- Success Message -->
+        <div x-show="uploadComplete" x-cloak class="mt-4">
+            <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4" role="alert">
+                <p class="font-bold">Success!</p>
+                <p>Your file has been uploaded and is being processed.</p>
+            </div>
+            <a 
+                x-bind:href="'/view/' + taskId" 
+                class="w-full block py-2 px-4 bg-blue-600 text-white text-center font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75"
+            >
+                View Results
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('uploadForm', () => ({
+            fileName: '',
+            isUploading: false,
+            uploadComplete: false,
+            taskId: '',
+            errorMessage: '',
+            
+            async upload() {
+                const form = document.getElementById('upload-form');
+                const formData = new FormData(form);
+                
+                this.isUploading = true;
+                this.errorMessage = '';
+                
+                try {
+                    const response = await fetch('/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        this.taskId = data.task_id;
+                        this.uploadComplete = true;
+                    } else {
+                        this.errorMessage = data.detail || 'File upload failed. Please try again.';
+                    }
+                } catch (error) {
+                    this.errorMessage = 'An error occurred during upload. Please try again.';
+                    console.error('Upload error:', error);
+                } finally {
+                    this.isUploading = false;
+                }
+            }
+        }));
+    });
+</script>
+{% endblock %} 
