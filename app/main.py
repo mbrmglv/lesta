@@ -1,6 +1,9 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
+from fastapi.staticfiles import StaticFiles
+from fastapi.openapi.utils import get_openapi
 
 from app.api import router
 
@@ -23,7 +26,49 @@ app = FastAPI(
     description="A web application for analyzing text files using TF-IDF",
     version="1.0.0",
     lifespan=lifespan,
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
+    swagger_ui_parameters={"syntaxHighlight.theme": "obsidian"}
 )
+
+# Custom OpenAPI schema
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description + """
+        
+        ## Features
+        
+        - Upload text files for TF-IDF analysis
+        - Process documents in the background
+        - View and paginate through analysis results
+        
+        ## API Endpoints
+        
+        * `/upload` - Upload text files for processing
+        * `/results/{task_id}` - Get analysis results
+        * `/view/{task_id}` - View formatted results page
+        """,
+        routes=app.routes,
+    )
+    
+    # Add server information
+    openapi_schema["servers"] = [
+        {"url": "/", "description": "Current server"},
+    ]
+    
+    # Add authentication information if needed
+    # openapi_schema["components"]["securitySchemes"] = {...}
+    
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+app.openapi = custom_openapi
 
 # Add CORS middleware
 app.add_middleware(

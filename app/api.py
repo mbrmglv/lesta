@@ -1,6 +1,6 @@
 import os
 import tempfile
-from fastapi import APIRouter, UploadFile, File, HTTPException, Query, BackgroundTasks, Depends
+from fastapi import APIRouter, UploadFile, File, HTTPException, Query, BackgroundTasks, Depends, status
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.requests import Request
@@ -8,14 +8,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.parsing import split_into_documents
 from app.services.tfidf import process_text
-from app.schemas import UploadResponse, ResultsResponse, WordInfo
+from app.schemas import UploadResponse, ResultsResponse, WordInfo, ErrorResponse
 from app.database.db import get_async_db
 from app.database import crud
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
-@router.get("/", response_class=HTMLResponse)
+@router.get("/", response_class=HTMLResponse, summary="Home Page", description="Renders the home page with file upload form")
 async def home(request: Request):
     """Render the home page with file upload form."""
     return templates.TemplateResponse("index.html", {"request": request})
@@ -56,15 +56,30 @@ async def process_file_task(file_path: str, task_id: str, db: AsyncSession):
         except OSError as e:
             print(f"Warning: Failed to delete temporary file {file_path}: {e}")
 
-@router.post("/upload", response_model=UploadResponse)
+@router.post(
+    "/upload", 
+    response_model=UploadResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Upload Text File",
+    description="Upload a text file for TF-IDF analysis. The file will be processed asynchronously.",
+    responses={
+        202: {"description": "File accepted for processing", "model": UploadResponse},
+        400: {"description": "Invalid request", "model": ErrorResponse},
+        500: {"description": "Server error", "model": ErrorResponse}
+    }
+)
 async def upload_file(
     background_tasks: BackgroundTasks,
-    file: UploadFile = File(...),
+    file: UploadFile = File(..., description="Text file to analyze (.txt or .text format)"),
     db: AsyncSession = Depends(get_async_db)
 ):
     """
     Upload a text file and process it in the background.
     Returns a task ID for retrieving results.
+    
+    - **file**: Text file (.txt or .text) with content to analyze
+    
+    The file size is limited to 5MB.
     """
     # Validate file
     if not file.filename:
@@ -94,16 +109,33 @@ async def upload_file(
         message="File upload successful. Processing started."
     )
 
-@router.get("/results/{task_id}", response_model=ResultsResponse)
+@router.get(
+    "/results/{task_id}", 
+    response_model=ResultsResponse,
+    summary="Get Analysis Results",
+    description="Get the processed TF-IDF results for a specific task. Supports pagination.",
+    responses={
+        200: {"description": "Successful response with results", "model": ResultsResponse},
+        202: {"description": "Analysis is still processing", "model": ErrorResponse},
+        404: {"description": "Analysis not found", "model": ErrorResponse},
+        500: {"description": "Analysis failed", "model": ErrorResponse}
+    }
+)
 async def get_results(
     task_id: str, 
-    page: int = Query(1, ge=1),
+    page: int = Query(1, ge=1, description="Page number for pagination"),
     request: Request = None,
     db: AsyncSession = Depends(get_async_db)
 ):
     """
     Get the processed results for a specific task.
     Supports pagination with 10 items per page.
+    
+    - **task_id**: UUID of the analysis task
+    - **page**: Page number (starting from 1)
+    
+    If accessed from a browser, returns an HTML page with results.
+    If accessed programmatically, returns JSON data.
     """
     # Получаем анализ из базы данных
     analysis = await crud.get_text_analysis(db, task_id)
@@ -162,9 +194,28 @@ async def get_results(
         pages=total_pages
     )
 
-@router.get("/view/{task_id}", response_class=HTMLResponse)
-async def view_results(request: Request, task_id: str, page: int = Query(1, ge=1), db: AsyncSession = Depends(get_async_db)):
+@router.get(
+    "/view/{task_id}", 
+    response_class=HTMLResponse,
+    summary="View Results Page",
+    description="Render HTML page with results table for a specific analysis task.",
+    responses={
+        200: {"description": "HTML page with results"},
+        202: {"description": "Analysis is still processing"},
+        404: {"description": "Analysis not found"},
+        500: {"description": "Analysis failed"}
+    }
+)
+async def view_results(
+    request: Request, 
+    task_id: str, 
+    page: int = Query(1, ge=1, description="Page number for pagination"),
+    db: AsyncSession = Depends(get_async_db)
+):
     """
     Render HTML page with results table.
+    
+    - **task_id**: UUID of the analysis task
+    - **page**: Page number (starting from 1)
     """
     return await get_results(task_id, page, request, db) 
