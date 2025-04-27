@@ -76,4 +76,4 @@ temp/
 migrations/versions/
 
 # Other
-node_modules/ 
+node_modules/

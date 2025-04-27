@@ -15,14 +15,16 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+        poetry install --with dev --no-root
     - name: Lint with ruff
       run: |
-        pip install ruff
-        ruff check .
+        poetry run ruff check .
 
   test:
     runs-on: ubuntu-latest
@@ -32,15 +34,17 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        python -c "import nltk; nltk.download('stopwords', quiet=True)"
+        poetry install --with dev --no-root
+        poetry run python -c "import nltk; nltk.download('stopwords', quiet=True)"
     - name: Test with pytest
       run: |
-        pip install pytest pytest-cov
-        pytest --cov=app
+        poetry run pytest --cov=app
 
   build:
     runs-on: ubuntu-latest
@@ -56,4 +60,4 @@ jobs:
         push: false
         tags: tfidf-app:latest
         cache-from: type=gha
-        cache-to: type=gha,mode=max 
+        cache-to: type=gha,mode=max

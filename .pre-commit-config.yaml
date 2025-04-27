@@ -1,0 +1,29 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^samples/
+      - id: end-of-file-fixer
+        exclude: ^samples/
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-toml
+      - id: debug-statements
+      - id: check-merge-conflict
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.5  # Same version as in requirements.txt
+    hooks:
+      - id: ruff
+        args: [--fix]
+        exclude: ^samples/
+      - id: ruff-format
+        exclude: ^samples/
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.7.0  # Same version as in requirements.txt
+    hooks:
+      - id: mypy
+        exclude: ^migrations/|^samples/
+        args: [--ignore-missing-imports, --config-file=pyproject.toml]

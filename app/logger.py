@@ -1,7 +1,7 @@
 import logging
+import os
 import sys
 import time
-import os
 from pathlib import Path
 
 import structlog
@@ -56,34 +56,36 @@ structlog.configure(
     cache_logger_on_first_use=True,
 )
 
+
 # Create logger factory function
 def get_logger(name: str) -> structlog.stdlib.BoundLogger:
     """
     Get a logger instance with the given name.
-    
+
     Args:
         name: The logger name, typically __name__ of the calling module
-        
+
     Returns:
         A structured logger instance
     """
     return structlog.get_logger(name)
 
+
 # Custom context manager for timing operations
 class TimingLogger:
     """Context manager for timing operations and logging the duration."""
-    
+
     def __init__(self, logger: structlog.stdlib.BoundLogger, operation: str, **kwargs):
         self.logger = logger
         self.operation = operation
         self.kwargs = kwargs
-        self.start_time = None
-        
+        self.start_time: float = 0.0
+
     def __enter__(self):
         self.start_time = time.time()
         self.logger.info(f"{self.operation} started", **self.kwargs)
         return self
-        
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         duration = time.time() - self.start_time
         if exc_type is not None:
@@ -91,11 +93,9 @@ class TimingLogger:
                 f"{self.operation} failed",
                 exc_info=(exc_type, exc_val, exc_tb),
                 duration=duration,
-                **self.kwargs
+                **self.kwargs,
             )
         else:
             self.logger.info(
-                f"{self.operation} completed",
-                duration=duration,
-                **self.kwargs
-            ) 
+                f"{self.operation} completed", duration=duration, **self.kwargs
+            )

@@ -5,7 +5,7 @@
 {% block content %}
 <div class="max-w-6xl mx-auto bg-white p-8 rounded-lg shadow-md">
     <h1 class="text-3xl font-bold mb-6 text-center text-blue-700">Analysis Results</h1>
-    
+
     <div class="mb-6">
         <a href="/" class="inline-flex items-center text-blue-600 hover:text-blue-800">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
@@ -14,7 +14,7 @@
             Back to Upload
         </a>
     </div>
-    
+
     <div class="mb-4">
         <p class="text-gray-600">
             Showing the words with IDF values, sorted in descending order.
@@ -23,7 +23,7 @@
             Page {{ page }} of {{ total_pages }} ({{ total_items }} items total)
         </p>
     </div>
-    
+
     <div class="overflow-x-auto">
         <table id="results-table" class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
@@ -74,7 +74,7 @@
             </tbody>
         </table>
     </div>
-    
+
     <!-- Pagination -->
     {% if total_pages > 1 %}
     <div class="flex items-center justify-between border-t border-gray-200 px-4 py-3 sm:px-6 mt-4" id="pagination-container">
@@ -88,7 +88,7 @@
                 <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
                     <!-- Previous Page -->
                     {% if page > 1 %}
-                    <a href="/view/{{ task_id }}?page={{ page - 1 }}" 
+                    <a href="/view/{{ task_id }}?page={{ page - 1 }}"
                        class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0">
                         <span class="sr-only">Previous</span>
                         <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -103,7 +103,7 @@
                         </svg>
                     </span>
                     {% endif %}
-                    
+
                     <!-- Page Numbers -->
                     {% for page_num in range(1, total_pages + 1) %}
                         {% if page_num == page %}
@@ -111,7 +111,7 @@
                             {{ page_num }}
                         </span>
                         {% elif page_num <= 3 or page_num >= total_pages - 2 or (page_num >= page - 1 and page_num <= page + 1) %}
-                        <a href="/view/{{ task_id }}?page={{ page_num }}" 
+                        <a href="/view/{{ task_id }}?page={{ page_num }}"
                            class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0">
                            {{ page_num }}
                         </a>
@@ -121,10 +121,10 @@
                         </span>
                         {% endif %}
                     {% endfor %}
-                    
+
                     <!-- Next Page -->
                     {% if page < total_pages %}
-                    <a href="/view/{{ task_id }}?page={{ page + 1 }}" 
+                    <a href="/view/{{ task_id }}?page={{ page + 1 }}"
                        class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0">
                         <span class="sr-only">Next</span>
                         <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -145,4 +145,4 @@
     </div>
     {% endif %}
 </div>
-{% endblock %} 
+{% endblock %}

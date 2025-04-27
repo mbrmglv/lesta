@@ -1,30 +1,53 @@
-.PHONY: setup run test lint clean docker-build docker-run docker-compose-up docker-compose-down migrate migrate-rollback
+.PHONY: setup run test lint clean docker-build docker-run docker-compose-up docker-compose-down migrate migrate-rollback pre-commit pre-commit-install pre-commit-run poetry-install poetry-update requirements
 
 # Variables
 PYTHON = python3
 PIP = $(PYTHON) -m pip
 APP_MODULE = app.main:app
 
-# Setup local development
+# Setup local development with Poetry
 setup:
+	poetry install
+	$(PYTHON) -c "import nltk; nltk.download('stopwords', quiet=True)"
+	pre-commit install
+
+# Старая настройка с pip
+setup-pip:
 	$(PIP) install -r requirements.txt
 	$(PYTHON) -c "import nltk; nltk.download('stopwords', quiet=True)"
+	pre-commit install
+
+# Poetry commands
+poetry-install:
+	poetry install
+
+poetry-update:
+	poetry update
+
+# Generate requirements.txt from pyproject.toml
+requirements:
+	poetry export -f requirements.txt --output requirements.txt --without-hashes
+	@echo "Requirements files updated successfully"
+
+# Автоматически обновлять requirements.txt при изменении pyproject.toml
+requirements.txt: pyproject.toml
+	$(MAKE) requirements
 
 # Run the application locally
 run:
-	uvicorn $(APP_MODULE) --reload
+	poetry run uvicorn $(APP_MODULE) --reload
 
 # Test
 test:
-	pytest
+	poetry run pytest
 
 # Test with coverage
 test-cov:
-	pytest --cov=app --cov-report=term-missing
+	poetry run pytest --cov=app --cov-report=term-missing
 
 # Lint
 lint:
-	ruff check .
+	poetry run ruff check .
 
 # Clean
 clean:
@@ -56,13 +79,20 @@ docker-compose-logs:
 
 # Database migrations
 migrate:
-	alembic upgrade head
+	poetry run alembic upgrade head
 
 migrate-create:
-	alembic revision --autogenerate -m "$(message)"
+	poetry run alembic revision --autogenerate -m "$(message)"
 
 migrate-rollback:
-	alembic downgrade -1
+	poetry run alembic downgrade -1
 
 # Default target
-all: lint test 
+all: lint test
+
+# Pre-commit
+pre-commit-install:
+	pre-commit install
+
+pre-commit-run:
+	pre-commit run --all-files

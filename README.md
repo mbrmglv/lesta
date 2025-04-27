@@ -57,8 +57,13 @@ make docker-compose-logs
 python -m venv venv
 source venv/bin/activate  # На Windows: venv\Scripts\activate
 
-# Установите зависимости
+# Установка Poetry (если не установлен)
+pip install poetry
+
+# Установите зависимости с помощью Poetry
 make setup
+# или
+poetry install --no-root
 
 # Настройте базу данных (измените учетные данные при необходимости)
 export DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/tfidf
@@ -71,6 +76,36 @@ make migrate
 # Запустите приложение
 make run
 ```
+
+## Управление зависимостями с Poetry
+
+Проект использует Poetry для управления зависимостями. Все пакеты определены в `pyproject.toml`.
+
+```bash
+# Добавление новой зависимости
+poetry add package_name
+
+# Добавление dev-зависимости
+poetry add --group dev package_name
+
+# Обновление зависимостей
+poetry update
+
+# Генерация requirements.txt
+make requirements
+```
+
+Файлы `requirements.txt` и `requirements-dev.txt` автоматически генерируются из `pyproject.toml`.
+
+### Автоматическое обновление requirements.txt
+
+Настроен GitHub Actions workflow, который автоматически обновляет requirements.txt при изменении pyproject.toml:
+
+1. При каждом push в ветку main, если обнаружены изменения в pyproject.toml
+2. Workflow можно запустить вручную через GitHub Actions UI
+3. Автоматически создается коммит с обновленными файлами
+
+Это гарантирует, что requirements.txt всегда соответствует зависимостям, определенным в pyproject.toml.
 
 ## Как это работает
 
@@ -131,8 +166,13 @@ make migrate
 
 # Откат миграций
 make migrate-rollback
+
+# Обновление requirements.txt из pyproject.toml
+make requirements
 ```
+
+## Pre-commit хуки
 
 ## Лицензия
 
-[MIT License](LICENSE) 
+[MIT License](LICENSE)
